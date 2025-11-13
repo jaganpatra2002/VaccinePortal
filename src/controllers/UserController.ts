@@ -1,7 +1,8 @@
 import { ObjectId } from "mongodb";
 import { UserModel, VaccinationStatus } from "../models/UserModel";
 import { dbConnect, slotdbConnect } from "../utils/MongoClient";
-
+import { loginValidator, profileValidator, registerValidator, slotValidator } from '../validator/UserSchemaValidator';
+import { ResponseFormat } from "../responseFormat";
 export const init = async () => {
     const db = await dbConnect();
     if (db) {
@@ -11,25 +12,16 @@ export const init = async () => {
 init();
 export const registerUser = async (event: any) => {
     try {
+           const db = await dbConnect();
         console.log("User is registered");
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         console.log("Parsed body:", body);
         const { name, mobile, password, aadharNumber, age, pincode, } = body;
-        if (!name || !mobile || !password || !aadharNumber || !age || !pincode) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "All fields Required" })
-            }
-        }
-        const db = await dbConnect();
+     
         const existingUser = await db!.findOne({ mobile });
         if (existingUser) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "User already exists with this mobile number" })
-            }
+            return ResponseFormat(400, "User already exists with this mobile number");
         }
-
         const newUser: UserModel = {
             name,
             mobile,
@@ -42,125 +34,99 @@ export const registerUser = async (event: any) => {
             bookedSlot: null,
             doseHistory: [],
         };
-        await db!.insertOne(newUser);
 
+        const validateResult = registerValidator.validate(newUser);
+        if (validateResult.error) {
+            console.error('Validation error:', validateResult.error.message);
+            return ResponseFormat(400, "Validation Format error", validateResult.error.message);
 
-        return {
-            statusCode: 201,
-            body: JSON.stringify({ message: "User Registered Successfully" })
         }
-
+        else {
+            console.log('Valid data:', validateResult.value);
+            await db!.insertOne(newUser);
+            return ResponseFormat(201, "User Registered Successfully");
+        }
     } catch (error) {
         console.log("Error in Register Process:", error);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ message: "Internal Server Error", error })
-        }
+        return ResponseFormat(400, "Internal Server Error", error);
     }
 }
 export const loginUser = async (event: any) => {
     try {
         const body = JSON.parse(event.body);
         const { mobile, password } = body;
-        if (!mobile || !password) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "All fields Required for login" })
-            }
-        }
         const db = await dbConnect();
-        const existingUser = await db!.findOne({ mobile });
-        if (!existingUser) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "User Not found with this mobile number" })
-            }
+        console.log(mobile, password);
+        const validateCred = loginValidator.validate(body);
+        console.log(validateCred);
+        if (validateCred.error) {
+            return ResponseFormat(400, "Validation Format error", validateCred.error.message);
         }
+        else {
+            const existingUser = await db!.findOne({ mobile });
+            if (!existingUser) {
+                return ResponseFormat(400, "User Not found with this mobile number");
+            }
 
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
+            return ResponseFormat(200, "User Information", {
                 _id: existingUser?._id,
                 name: existingUser?.name,
                 mobile: existingUser?.mobile,
                 isAdmin: existingUser?.isAdmin || false,
-
-            })
+            });
         }
     } catch (error) {
         console.log("Error in LoginUser", error);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ message: "Internal Server Error", error })
-        }
+        return ResponseFormat(400, "Internal Server Error", error);
     }
 }
 export const getProfile = async (event: any) => {
     try {
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         const { mobile } = body;
-        if (!mobile || mobile.length > 10) {
-            console.log("Invalid Mobile Number");
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "Invalid Mobile Number" })
-            }
-        }
         const db = await dbConnect();
+        const validateProfile = profileValidator.validate(body);
+        console.log(validateProfile);
+        if (validateProfile.error) {
+            return ResponseFormat(400, "Validation Format error", validateProfile.error.message);
+        }
         const userProfile = await db!.findOne({ mobile });
         if (!userProfile) {
             console.log("User not exists in db");
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "User not found with this mobile number" })
-            }
+            return ResponseFormat(400, "User not found with this mobile number");
+
         }
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                _id: userProfile?._id,
-                name: userProfile?.name,
-                mobile: userProfile?.mobile,
-            })
-        }
+        return ResponseFormat(200, "Profile Information", {
+            _id: userProfile?._id,
+            name: userProfile?.name,
+            mobile: userProfile?.mobile,
+        });
+
     } catch (error) {
         console.log("Error in profile api", error);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ message: "Something went wrong", error })
-        }
+        return ResponseFormat(400, "Internal Server Error", error);
     }
 }
 
 export const bookSlot = async (event: any) => {
     try {
-        
+
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         const { slotId } = body;
-        if (!slotId) {
-            console.log("SLot Id is not valid");
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    message: "SLot Id is not valid"
-                })
-            }
-        }
         const db = await slotdbConnect();
-           console.log("SlotId", slotId);
-        const objectId=new ObjectId(slotId);
+        console.log("SlotId", slotId);
+        const objectId = new ObjectId(slotId);
         console.log("ObjectId", objectId);
-        const checkSLotId =await  db?.findOne({ _id:objectId });
-         console.log("checkSLotId", checkSLotId);
+        const validateSlotId = slotValidator.validate(body);
+        if (validateSlotId.error) {
+            return ResponseFormat(400, "Validation Format error", validateSlotId.error.message);
+        }
+        const checkSLotId = await db?.findOne({ _id: objectId });
+        console.log("checkSLotId", checkSLotId);
         if (!checkSLotId) {
             console.log("Slot id is not present in db");
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    message: "slot id not exist in db"
-                })
-            }
+            return ResponseFormat(400, "slot id not exist in db");
+
         }
         await db?.updateOne({
             _id: objectId
@@ -171,16 +137,10 @@ export const bookSlot = async (event: any) => {
                 }
             })
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: "Slot booked" }),
-        };
+         return ResponseFormat(200, "Slot Booked");
 
     } catch (error) {
         console.log("Error in bookSlot api", error);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ message: "Something went wrong", error })
-        }
+        return ResponseFormat(400, "Internal Server Error", error);
     }
 }

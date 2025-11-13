@@ -5,14 +5,17 @@
   "main": "handler.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "dev": "npm run build && sls offline"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@joi/date": "^2.1.1",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "joi": "^18.0.1",
     "mongodb": "^7.0.0",
     "nodemon": "^3.1.10"
   },
