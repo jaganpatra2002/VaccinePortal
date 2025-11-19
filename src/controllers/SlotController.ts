@@ -42,68 +42,68 @@ export const viewSlot = async (event: any) => {
     }
 }
 
-// export const BookSlot = async (event: any) => {
-//     try {
-//         const checkAuth = await tokenValidation(event);
-//         if (checkAuth !== 1) {
-//             return ResponseFormat(401, "Unauthorized: Invalid token");
-//         }
-//         const DB = await connectToDb();
-//         const body = typeof event.body == "string" ? JSON.parse(event.body) : event.body;
-//         const { mobile, doseType, slotId } = body;
-//         const validateUserData = slotBookingValidator.validate(body);
-//         if (validateUserData.error) {
-//             return ResponseFormat(400, "Format Error", validateUserData.error);
-//         }
-//         const existingUser = await DB.userDb?.findOne({ mobile });
-//         if (!existingUser) {
-//             return ResponseFormat(400, "User not found")
-//         }
-//         if (doseType == DoseType.Two && existingUser.vaccinationStatus !== VaccinationStatus.FirstDose) {
-//             return ResponseFormat(400, "Cannot book 2nd dose before completing 1st dose")
+export const BookSlot = async (event: any) => {
+    try {
+        const checkAuth = await tokenValidation(event);
+        if (checkAuth !== 1) {
+            return ResponseFormat(401, "Unauthorized: Invalid token");
+        }
+        const DB = await connectToDb();
+        const body = typeof event.body == "string" ? JSON.parse(event.body) : event.body;
+        const { mobile, doseType, slotId } = body;
+        const validateUserData = slotBookingValidator.validate(body);
+        if (validateUserData.error) {
+            return ResponseFormat(400, "Format Error", validateUserData.error);
+        }
+        const existingUser = await DB.userDb?.findOne({ mobile });
+        if (!existingUser) {
+            return ResponseFormat(400, "User not found")
+        }
+        if (doseType == DoseType.Two && existingUser.vaccinationStatus !== VaccinationStatus.FirstDose) {
+            return ResponseFormat(400, "Cannot book 2nd dose before completing 1st dose")
 
-//         }
-//         // slot not found
-//         const objectId = new ObjectId(slotId);
-//         const existingSlotId = await DB.slotDb?.findOne({ _id: objectId });
-//         console.log(existingSlotId);
-//         if (!existingSlotId) {
-//             return ResponseFormat(400, "Slot Id not found")
-//         }
-//         // check slot full or not
-//         if (existingSlotId.availableCapacity <= 0) {
-//             return ResponseFormat(400, "Slots are full for this id", existingSlotId._id)
-//         }
-//         let vaccineStatus: VaccinationStatus = doseType === DoseType.One
-//             ? VaccinationStatus.FirstDose
-//             : VaccinationStatus.AllDose;
-//         // reduce availableCapacity  to 1 of that slot id
-//         await DB.slotDb?.updateOne({ _id: existingSlotId._id }, {
-//             $inc: {
-//                 "availableCapacity": -1,
-//                 "bookedCount": +1
-//             }
-//         })
-//         //  update slotid in bookedslot
-//         await DB.userDb?.updateOne({ mobile: mobile }, {
-//             $set: {
-//                 "bookedSlot": existingSlotId._id,
-//                 "vaccinationStatus": vaccineStatus
-//             },
-//             $push: {
-//                 doseHistory: {
-//                     dose: doseType,
-//                     slotId: existingSlotId._id,
-//                     date: new Date()
-//                 }
-//             }
-//         } as any)
-//         return ResponseFormat(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId._id}`)
-//     } catch (error) {
-//         console.log(error);
-//         return ResponseFormat(400, "Something Went Wrong", error);
-//     }
-// }
+        }
+        // slot not found
+        const objectId = new ObjectId(slotId);
+        const existingSlotId = await DB.slotDb?.findOne({ _id: objectId });
+        console.log(existingSlotId);
+        if (!existingSlotId) {
+            return ResponseFormat(400, "Slot Id not found")
+        }
+        // check slot full or not
+        if (existingSlotId.availableCapacity <= 0) {
+            return ResponseFormat(400, "Slots are full for this id", existingSlotId._id)
+        }
+        let vaccineStatus: VaccinationStatus = doseType === DoseType.One
+            ? VaccinationStatus.FirstDose
+            : VaccinationStatus.AllDose;
+        // reduce availableCapacity  to 1 of that slot id
+        await DB.slotDb?.updateOne({ _id: existingSlotId._id }, {
+            $inc: {
+                "availableCapacity": -1,
+                "bookedCount": +1
+            }
+        })
+        //  update slotid in bookedslot
+        await DB.userDb?.updateOne({ mobile: mobile }, {
+            $set: {
+                "bookedSlot": existingSlotId._id,
+                "vaccinationStatus": vaccineStatus
+            },
+            $push: {
+                doseHistory: {
+                    dose: doseType,
+                    slotId: existingSlotId._id,
+                    date: new Date()
+                }
+            }
+        } as any)
+        return ResponseFormat(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId._id}`)
+    } catch (error) {
+        console.log(error);
+        return ResponseFormat(400, "Something Went Wrong", error);
+    }
+}
 
 export const userSlotBooking = async (event: any) => {
     try {
@@ -159,7 +159,6 @@ export const cancelSlot = async (event: any) => {
             return ResponseFormat(400, "No Slots to cancel");
         }
         const slotInfo = existingUser.doseHistory[0].date;
-        console.log(slotInfo);
         const slotDateTime = new Date(slotInfo);
 
         console.log(`Parsed slotDateTime object: ${slotDateTime.toISOString()}`);
@@ -214,81 +213,3 @@ export const cancelSlot = async (event: any) => {
     }
 }
 
-export const BookSlot = async (event: any) => {
-    try {
-        const checkAuthStart = Date.now();
-        const checkAuth = await tokenValidation(event);
-        console.log(`[PERF] tokenValidation took ${Date.now() - checkAuthStart}ms`);
-        if (checkAuth !== 1) {
-            return ResponseFormat(401, "Unauthorized: Invalid token");
-        }
-        const connectDbStart = Date.now();
-        const DB = await connectToDb();
-        console.log(`[PERF] connectToDb took ${Date.now() - connectDbStart}ms`);
-
-        const body = typeof event.body == "string" ? JSON.parse(event.body) : event.body;
-        const { mobile, doseType, slotId } = body;
-        const validateStart = Date.now();
-        const validateUserData = slotBookingValidator.validate(body);
-        console.log(`[PERF] slotBookingValidator took ${Date.now() - validateStart}ms`);
-
-        if (validateUserData.error) {
-            return ResponseFormat(400, "Format Error", validateUserData.error);
-        }
-
-        const findUserStart = Date.now();
-        const existingUser = await DB.userDb?.findOne({ mobile });
-        console.log(`[PERF] DB.userDb?.findOne({ mobile }) took ${Date.now() - findUserStart}ms`);
-        if (!existingUser) {
-            return ResponseFormat(400, "User not found")
-        }
-        if (doseType == DoseType.Two && existingUser.vaccinationStatus !== VaccinationStatus.FirstDose) {
-            return ResponseFormat(400, "Cannot book 2nd dose before completing 1st dose")
-        }
-
-        const objectId = new ObjectId(slotId);
-        const findSlotStart = Date.now();
-        const existingSlotId = await DB.slotDb?.findOne({ _id: objectId });
-        console.log(`[PERF] DB.slotDb?.findOne({ _id: objectId }) took ${Date.now() - findSlotStart}ms`);
-        console.log(existingSlotId);
-        if (!existingSlotId) {
-            return ResponseFormat(400, "Slot Id not found")
-        }
-        if (existingSlotId.availableCapacity <= 0) {
-            return ResponseFormat(400, "Slots are full for this id", existingSlotId._id)
-        }
-        let vaccineStatus: VaccinationStatus = doseType === DoseType.One
-            ? VaccinationStatus.FirstDose
-            : VaccinationStatus.AllDose;
-
-        const updateSlotStart = Date.now();
-        await DB.slotDb?.updateOne({ _id: existingSlotId._id }, {
-            $inc: {
-                "availableCapacity": -1,
-                "bookedCount": +1
-            }
-        });
-        console.log(`[PERF] DB.slotDb?.updateOne took ${Date.now() - updateSlotStart}ms`);
-
-        const updateUserStart = Date.now();
-        await DB.userDb?.updateOne({ mobile: mobile }, {
-            $set: {
-                "bookedSlot": existingSlotId._id,
-                "vaccinationStatus": vaccineStatus
-            },
-            $push: {
-                doseHistory: {
-                    dose: doseType,
-                    slotId: existingSlotId._id,
-                    date: new Date()
-                }
-            }
-        } as any);
-        console.log(`[PERF] DB.userDb?.updateOne took ${Date.now() - updateUserStart}ms`);
-
-        return ResponseFormat(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId._id}`)
-    } catch (error) {
-        console.log(error);
-        return ResponseFormat(400, "Something Went Wrong", error);
-    }
-}

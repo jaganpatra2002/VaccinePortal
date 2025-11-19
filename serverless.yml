@@ -17,8 +17,26 @@ provider:
             - "cognito-idp:SignUp"
             - "cognito-idp:AdminCreateUser"
             - "cognito-idp:AdminSetUserPassword"
-
+            - s3:PutObject
+            - s3:GetObject 
+            - s3:DeleteObject
           Resource: "*"
+
+  S3UploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: s3signed123
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - DELETE
+            AllowedOrigins:
+              - "*"
+            
   # Uncomment to easily set up a custom domain. Read the docs for more details:
   # https://www.serverless.com/framework/docs/providers/aws/guide/domains
   # domain: api.example.com
@@ -49,13 +67,6 @@ functions:
       - http:
           path: /getProfile
           method: get
-            
-  # bookSlot:
-  #   handler: dist/controllers/UserController.bookSlot
-  #   events:
-  #     - http:
-  #         path: /bookSlot
-  #         method: post
 
   addSlot:
     handler: dist/controllers/AdminController.addSlot
@@ -112,6 +123,27 @@ functions:
       - http:
           path: /cancelSlot
           method: get
+  
+  uploadFile:
+    handler: dist/s3/uploadFile.uploadFile
+    events:
+      - http:
+          path: /uploadFile
+          method: get
+
+  getFile:
+    handler: dist/s3/getFile.getFile
+    events:
+      - http:
+          path: /getFile
+          method: get
+
+  deleteFile:
+    handler: dist/s3/deleteFile.deleteFile
+    events:
+      - http:
+          path: /deleteFile
+          method: delete
 
   # UpdateVaccinationStatusCron:
   #   handler: dist/cron/markVaccinated.UpdateVaccinationStatusCron

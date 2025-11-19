@@ -12,7 +12,7 @@ const UserSchemaValidator_1 = require("../validator/UserSchemaValidator");
 const responseFormat_1 = require("../utils/responseFormat");
 const client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
 const auth_1 = require("../middleware/auth");
-const client = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({ region: "us-east-1" });
+const client = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 const init = async () => {
     const db = await (0, MongoClient_1.dbConnect)();
     if (db) {

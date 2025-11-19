@@ -19,7 +19,18 @@ export const tokenValidation = async (event: any) => {
     }
 
     const verifyStart = Date.now();
-    const payload = await verifier.verify(token);
+    let payload;
+    //  = await verifier.verify(token);
+    try {
+        payload= await verifier.verify(token);
+        return payload;
+    } catch (error:any) {
+        console.log("Error in token verification", error);
+        if(error.logs){
+               console.log("Error in token verification", error);
+            return ResponseFormat(401, "Token Expired");
+        }
+    }
     console.log(`[PERF_AUTH] verifier.verify took ${Date.now() - verifyStart}ms`);
 
     if (!payload) {

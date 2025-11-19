@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { ObjectId } from "mongodb";
 import { UserModel, VaccinationStatus } from "../models/UserModel";
 import { dbConnect } from "../dbConnection/MongoClient";
 import { loginValidator, registerValidator } from '../validator/UserSchemaValidator';
@@ -8,7 +7,7 @@ import { ResponseFormat } from "../utils/responseFormat";
 import { AdminConfirmSignUpCommand, AdminInitiateAuthCommand, CognitoIdentityProviderClient, InitiateAuthCommand, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { tokenValidation, verifier } from "../middleware/auth";
 
-const client = new CognitoIdentityProviderClient({ region: "us-east-1" });
+const client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 export const init = async () => {
     const db = await dbConnect();
     if (db) {

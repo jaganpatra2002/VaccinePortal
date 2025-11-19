@@ -18,7 +18,19 @@ const tokenValidation = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: No token provided");
     }
     const verifyStart = Date.now();
-    const payload = await exports.verifier.verify(token);
+    let payload;
+    //  = await verifier.verify(token);
+    try {
+        payload = await exports.verifier.verify(token);
+        return payload;
+    }
+    catch (error) {
+        console.log("Error in token verification", error);
+        if (error.logs) {
+            console.log("Error in token verification", error);
+            return (0, responseFormat_1.ResponseFormat)(401, "Token Expired");
+        }
+    }
     console.log(`[PERF_AUTH] verifier.verify took ${Date.now() - verifyStart}ms`);
     if (!payload) {
         return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
