@@ -144,6 +144,20 @@ functions:
       - http:
           path: /deleteFile
           method: delete
+  
+  emailFormat:
+    handler: dist/s3/emailSNSTemplate.emailFormat
+    events:
+      - http: 
+          path: /emailFormat
+          method: post
+
+  SESMail:
+    handler: dist/src/emailSESTemplate.SESMail
+    events:
+      - http:
+          path: /SESMail
+          method: post
 
   # UpdateVaccinationStatusCron:
   #   handler: dist/cron/markVaccinated.UpdateVaccinationStatusCron

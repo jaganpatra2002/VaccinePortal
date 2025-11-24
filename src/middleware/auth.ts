@@ -20,7 +20,6 @@ export const tokenValidation = async (event: any) => {
 
     const verifyStart = Date.now();
     let payload;
-    //  = await verifier.verify(token);
     try {
         payload= await verifier.verify(token);
         return payload;

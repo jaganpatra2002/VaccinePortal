@@ -11,13 +11,11 @@ const client_s3_1 = require("@aws-sdk/client-s3");
 const s3Client = new client_s3_1.S3Client({ region: process.env.AWS_REGION });
 const deleteFile = async (event) => {
     try {
-        const filename = event.queryStringParameters?.filename;
-        const storeData = new client_s3_1.DeleteObjectCommand({
-            Bucket: process.env.BUCKET_NAME,
-            Key: filename,
+        const allData = new client_s3_1.ListObjectsCommand({
+            Bucket: process.env.BUCKET_NAME
         });
-        const info = await s3Client.send(storeData);
-        return (0, responseFormat_1.ResponseFormat)(200, "File deleted successfully in Bucket", info);
+        const allInfo = await s3Client.send(allData);
+        return (0, responseFormat_1.ResponseFormat)(200, "All Files Fetched successfully in Bucket", allInfo);
     }
     catch (error) {
         console.log(error);
