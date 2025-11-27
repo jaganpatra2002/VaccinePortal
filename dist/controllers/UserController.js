@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProfile = exports.loginUser = exports.registerUser = exports.init = void 0;
+exports.getProfile = exports.loginUser = exports.registerUser = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const UserModel_1 = require("../models/UserModel");
@@ -13,14 +13,7 @@ const responseFormat_1 = require("../utils/responseFormat");
 const client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
 const auth_1 = require("../middleware/auth");
 const client = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
-const init = async () => {
-    const db = await (0, MongoClient_1.dbConnect)();
-    if (db) {
-        console.log("Db collection Connected from UserController");
-    }
-};
-exports.init = init;
-(0, exports.init)();
+const userPoolId = "us-east-1_HRKw865aZ";
 const registerUser = async (event) => {
     try {
         const db = await (0, MongoClient_1.dbConnect)();
@@ -95,6 +88,17 @@ const loginUser = async (event) => {
         console.log("Parsed body:", body);
         const { mobile, password } = body;
         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
+        try {
+            const expireToken = new client_cognito_identity_provider_1.AdminUserGlobalSignOutCommand({
+                UserPoolId: userPoolId,
+                Username: mobileNumber
+            });
+            console.log("expiry", expireToken);
+            await client.send(expireToken);
+        }
+        catch (error) {
+            console.log("ERROR", error);
+        }
         const command = new client_cognito_identity_provider_1.InitiateAuthCommand({
             AuthFlow: "USER_PASSWORD_AUTH",
             ClientId: process.env.CLIENT_ID,
@@ -105,6 +109,8 @@ const loginUser = async (event) => {
         });
         const response = await client.send(command);
         const accessToken = response.AuthenticationResult?.AccessToken;
+        const idToken = response.AuthenticationResult?.IdToken;
+        const refreshToken = response.AuthenticationResult?.RefreshToken;
         const db = await (0, MongoClient_1.dbConnect)();
         console.log(mobile, password);
         const validateCred = UserSchemaValidator_1.loginValidator.validate(body);
@@ -119,6 +125,8 @@ const loginUser = async (event) => {
             }
             return (0, responseFormat_1.ResponseFormat)(200, "User Information", {
                 accessToken: accessToken,
+                idToken: idToken,
+                refreshToken: refreshToken,
                 _id: existingUser?._id,
                 name: existingUser?.name,
                 mobile: existingUser?.mobile,

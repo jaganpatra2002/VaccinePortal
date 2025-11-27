@@ -1,35 +1,28 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sizeReducer = void 0;
-const sharp_1 = __importDefault(require("sharp"));
+exports.handler = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
-const client_s3_2 = require("@aws-sdk/client-s3");
-const responseFormat_1 = require("../utils/responseFormat");
-const s3 = new client_s3_2.S3Client({ region: process.env.AWS_REGION });
-const sizeReducer = async (event) => {
-    for (const record of event.Records) {
-        const message = JSON.parse(record.body);
-        const s3Event = message.Records[0].s3;
-        const bucket = process.env.BUCKET_NAME;
-        const key = decodeURIComponent(s3Event.object.key);
+const s3 = new client_s3_1.S3Client({ region: "us-east-1" });
+const DESTINATION_BUCKET = "sizereducer";
+// let value=1;
+const handler = async (event) => {
+    console.log("Received SQS event:", JSON.stringify(event, null, 2));
+    let value = new Date().getTime();
+    for (const msg of event.Records) {
+        const s3Event = JSON.parse(msg.body).Records[0].s3;
+        const bucket = s3Event.bucket.name;
+        const key = decodeURIComponent(s3Event.object.key.replace(/\+/g, " "));
         console.log("Processing:", bucket, key);
-        const original = new client_s3_1.GetObjectCommand({
+        const original = await s3.send(new client_s3_1.GetObjectCommand({
             Bucket: bucket,
-            Key: key
-        });
-        console.log(original.input);
-        const resized = (0, sharp_1.default)().resize(300);
-        await new client_s3_1.PutObjectCommand({
-            Bucket: process.env.BUCKET_NAME_2,
-            Key: `resized/${key}`,
-            Body: resized,
-            ContentType: "image/jpeg"
-        });
-        console.log("Resized image uploaded!");
+            Key: key,
+        }));
+        await s3.send(new client_s3_1.PutObjectCommand({
+            Bucket: DESTINATION_BUCKET,
+            Key: `File${value}${key}`,
+        }));
+        // value++;
     }
-    return (0, responseFormat_1.ResponseFormat)(200, "File resized");
+    return { status: "done" };
 };
-exports.sizeReducer = sizeReducer;
+exports.handler = handler;

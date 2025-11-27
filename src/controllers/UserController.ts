@@ -4,23 +4,15 @@ import { UserModel, VaccinationStatus } from "../models/UserModel";
 import { dbConnect } from "../dbConnection/MongoClient";
 import { loginValidator, registerValidator } from '../validator/UserSchemaValidator';
 import { ResponseFormat } from "../utils/responseFormat";
-import { AdminConfirmSignUpCommand, AdminInitiateAuthCommand, CognitoIdentityProviderClient, InitiateAuthCommand, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { AdminConfirmSignUpCommand, AdminInitiateAuthCommand, AdminUserGlobalSignOutCommand, CognitoIdentityProviderClient, InitiateAuthCommand, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { tokenValidation, verifier } from "../middleware/auth";
 
 const client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
-export const init = async () => {
-    const db = await dbConnect();
-    if (db) {
-        console.log("Db collection Connected from UserController");
-    }
-}
-init();
+const userPoolId = "us-east-1_HRKw865aZ";
 export const registerUser = async (event: any) => {
     try {
         const db = await dbConnect();
-        console.log("User is registered");
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        console.log("Parsed body:", body);
         const { name, mobile, password, aadharNumber, age, pincode, } = body;
         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
         const existingUser = await db!.findOne({ mobile });
@@ -58,8 +50,6 @@ export const registerUser = async (event: any) => {
 
         const payload = await verifier.verify(accessToken!);
         const subid = payload.sub;
-        console.log("Sub ID from token payload:", subid);
-
         const newUser: UserModel = {
             name,
             mobile,
@@ -75,24 +65,30 @@ export const registerUser = async (event: any) => {
         };
         const validateResult = registerValidator.validate(newUser);
         if (validateResult.error) {
-            console.error('Validation error:', validateResult.error.message);
             return ResponseFormat(400, "Validation Format error", validateResult.error.message);
 
         }
-        console.log('Valid data:', validateResult.value);
         await db!.insertOne(newUser);
         return ResponseFormat(201, "User Registered Successfully");
     } catch (error) {
-        console.log("Error in Register Process:", error);
         return ResponseFormat(400, "Internal Server Error", error);
     }
 }
 export const loginUser = async (event: any) => {
     try {
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        console.log("Parsed body:", body);
         const { mobile, password } = body;
         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
+        try {
+            const expireToken = new AdminUserGlobalSignOutCommand({
+                UserPoolId: userPoolId,
+                Username: mobileNumber
+            });
+            await client.send(expireToken);
+        } catch (error) {
+            console.log("ERROR", error);
+        }
+
         const command = new InitiateAuthCommand({
             AuthFlow: "USER_PASSWORD_AUTH",
             ClientId: process.env.CLIENT_ID,
@@ -104,12 +100,11 @@ export const loginUser = async (event: any) => {
 
         const response = await client.send(command);
         const accessToken = response.AuthenticationResult?.AccessToken;
+        const idToken = response.AuthenticationResult?.IdToken;
+        const refreshToken = response.AuthenticationResult?.RefreshToken;
 
         const db = await dbConnect();
-        console.log(mobile, password);
-
         const validateCred = loginValidator.validate(body);
-        console.log(validateCred);
         if (validateCred.error) {
             return ResponseFormat(400, "Validation Format error", validateCred.error.message);
         }
@@ -120,6 +115,8 @@ export const loginUser = async (event: any) => {
             }
             return ResponseFormat(200, "User Information", {
                 accessToken: accessToken,
+                idToken: idToken,
+                refreshToken: refreshToken,
                 _id: existingUser?._id,
                 name: existingUser?.name,
                 mobile: existingUser?.mobile,
@@ -127,7 +124,6 @@ export const loginUser = async (event: any) => {
             });
         }
     } catch (error) {
-        console.log("Error in LoginUser", error);
         return ResponseFormat(400, "Internal Server Error", error);
     }
 }
@@ -142,14 +138,12 @@ export const getProfile = async (event: any) => {
         const payLoadSubId = payload.sub;
         const db = await dbConnect();
         const dbSubId = await db!.findOne({ "subId": payLoadSubId });
-        console.log("User sub from token payload:", dbSubId?.subId);
         return ResponseFormat(200, "Profile Information", {
             _id: dbSubId?._id,
             name: dbSubId?.name,
             mobile: dbSubId?.mobile,
         });
     } catch (error) {
-        console.log("Error in profile api", error);
         return ResponseFormat(400, "Internal Server Error", error);
     }
 }

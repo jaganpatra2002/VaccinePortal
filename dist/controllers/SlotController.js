@@ -26,25 +26,18 @@ const viewSlot = async (event) => {
         }
         const DB = await (0, exports.connectToDb)();
         const body = event.queryStringParameters?.date;
-        console.log("Body", body);
         const dateToValidate = { date: body };
-        console.log("Date", dateToValidate.date);
         const info = dateToValidate.date;
-        console.log("info", info);
         const validateDate = SlotSchemaValidator_1.validateSlot.validate({ date: info });
-        console.log("validateDate", validateDate);
         const dat1 = validateDate.value.info;
-        console.log("$$", dat1);
         if (validateDate.error) {
             return (0, responseFormat_1.ResponseFormat)(400, "Format Error", validateDate.error);
         }
         const slotcheck = validateDate.value;
-        console.log("slotcheck", slotcheck);
         const slotData = await DB.slotDb?.find({ dat1 }).toArray();
         return (0, responseFormat_1.ResponseFormat)(200, "All slots", slotData);
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };

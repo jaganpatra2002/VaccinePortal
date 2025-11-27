@@ -68,7 +68,6 @@ export const emailFormat = async (event:any) => {
         };
 
     } catch (err) {
-        console.error(err);
         throw err;
     }
 };

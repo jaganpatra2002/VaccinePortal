@@ -13,11 +13,8 @@ const getClient = async () => {
 };
 const dbConnect = async () => {
     try {
-        const checkAuthStart = Date.now();
         await getClient();
-        console.log(`[PERF] dbConnect time taken took ${Date.now() - checkAuthStart}ms`);
         const userDB = client.db("VaccineDatabase").collection("VaccinePortal");
-        // const vaccineData = myDB.collection("VaccinePortal");
         console.log("DB Connected Successfully");
         return userDB;
     }
@@ -30,7 +27,6 @@ const slotdbConnect = async () => {
     try {
         await getClient();
         const slotDB = client.db("VaccineDatabase").collection("slots");
-        // const slotData = myDB.collection("slots");
         console.log("DB Connected Successfully");
         return slotDB;
     }

@@ -18,7 +18,6 @@ export const getFile = async (event:any) => {
         return ResponseFormat(200,  "Fetched File Info",signedUrl);
     }
     catch (error: any) {
-        console.log(error);
         return ResponseFormat(400, "Something Went Wrong", error)
     }
 }

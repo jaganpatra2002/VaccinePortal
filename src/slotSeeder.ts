@@ -12,7 +12,6 @@ export const Slots = async () => {
   await client.connect();
   const myDB = client.db("VaccineDatabase");
   const slotData = myDB.collection("slots");
-  console.log("DB Connected Successfully");
   const StartDate = new Date("2024-11-01");
   const EndDate = new Date("2024-11-30");
   const slots: any[] = [];
@@ -36,6 +35,5 @@ export const Slots = async () => {
   }
 
   const result = await slotData.insertMany(slots);
-  console.log(` Inserted ${result.insertedCount} slots`);
 }
 Slots();

@@ -68,16 +68,14 @@ exports.getAllBookings = getAllBookings;
 const getFilteredData = async (event) => {
     try {
         const checkAuth = await (0, auth_1.tokenValidation)(event);
+        console.log("checkAuth", checkAuth);
         if (checkAuth !== 1) {
-            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid token");
+            return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid");
         }
         const DB = await (0, exports.connectToDb)();
         const age = event.queryStringParameters?.age;
         const pincode = event.queryStringParameters?.pincode;
         const vaccinationStatus = event.queryStringParameters?.vaccinationStatus;
-        console.log(age);
-        console.log(pincode);
-        console.log(vaccinationStatus);
         let query = { age, pincode, vaccinationStatus };
         const filterData = AdminSchemaValidator_1.filteredData.validate(query);
         if (filterData.error) {

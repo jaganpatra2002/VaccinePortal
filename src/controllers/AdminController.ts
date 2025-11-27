@@ -17,7 +17,6 @@ export const addSlot = async (event: any) => {
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         const { date, time, availableCapacity } = body;
         const sloValidate = addSlotValidate.validate(body);
-        console.log(sloValidate);
         if (sloValidate.error) {
             return ResponseFormat(400, "Format error", sloValidate.error.message)
         }
@@ -40,21 +39,18 @@ export const getSlots = async (event: any) => {
         const slotData = await DB.slotDb?.find().toArray();
         return ResponseFormat(200, "All slots found", slotData);
     } catch (error) {
-        console.log(error);
         return ResponseFormat(400, "Something went wrong", error);
     }
 }
 
-export const getAllBookings = async (event:any) => {
+export const getAllBookings = async (event: any) => {
     try {
         const checkAuth = await tokenValidation(event);
         if (checkAuth !== 1) {
             return ResponseFormat(401, "Unauthorized: Invalid token");
         }
         const DB = await connectToDb();
-        
         const bookingsData = await DB.userDb?.find({ bookedSlot: { $ne: null } }).toArray();
-        console.log(bookingsData);
         return ResponseFormat(200, "All bookings found", bookingsData);
 
     } catch (error) {
@@ -64,23 +60,19 @@ export const getAllBookings = async (event:any) => {
 
 export const getFilteredData = async (event: any) => {
     try {
-         const checkAuth = await tokenValidation(event);
+        const checkAuth = await tokenValidation(event);
         if (checkAuth !== 1) {
-            return ResponseFormat(401, "Unauthorized: Invalid token");
+            return ResponseFormat(401, "Unauthorized: Invalid");
         }
         const DB = await connectToDb();
         const age = event.queryStringParameters?.age;
         const pincode = event.queryStringParameters?.pincode;
         const vaccinationStatus = event.queryStringParameters?.vaccinationStatus;
-        console.log(age);
-        console.log(pincode);
-        console.log(vaccinationStatus);
         let query: Search = { age, pincode, vaccinationStatus };
         const filterData = filteredData.validate(query);
         if (filterData.error) {
             return ResponseFormat(400, "Format error", filterData.error.message)
         }
-        console.log(filterData.error);
         let finalquery: Search = {};
         if (filterData.value.age !== undefined) {
             finalquery.age = filterData.value.age;
@@ -92,12 +84,8 @@ export const getFilteredData = async (event: any) => {
             finalquery.vaccinationStatus = filterData.value.vaccinationStatus;
         }
         const data = await DB.userDb?.find(finalquery).toArray();
-        console.log(data);
-
-        return ResponseFormat(200, "All filtered data found", data);
-
+        return ResponseFormat(200, "All filtered data found",data);
     } catch (error) {
-        console.log(error);
         return ResponseFormat(400, "Something went wrong", error);
     }
 }

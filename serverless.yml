@@ -17,6 +17,7 @@ provider:
             - "cognito-idp:SignUp"
             - "cognito-idp:AdminCreateUser"
             - "cognito-idp:AdminSetUserPassword"
+            - "cognito-idp:AdminUserGlobalSignOut"
             - s3:PutObject
             - s3:GetObject 
             - s3:DeleteObject
@@ -158,6 +159,16 @@ functions:
       - http:
           path: /SESMail
           method: post
+
+  RefreshToken:
+    handler: dist/middleware/refreshToken.RefreshToken
+    events:
+      - http:
+          path: /RefreshToken
+          method: post
+
+  # SingleLogin:
+  #   handler: dist/middleware/singleLogin.SingleLogin
 
   # UpdateVaccinationStatusCron:
   #   handler: dist/cron/markVaccinated.UpdateVaccinationStatusCron

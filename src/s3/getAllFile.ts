@@ -14,7 +14,6 @@ export const deleteFile = async (event: any) => {
         return ResponseFormat(200, "All Files Fetched successfully in Bucket",allInfo);
     }
     catch (error: any) {
-        console.log(error);
         return ResponseFormat(400, "Something Went Wrong", error);
     }
 }
