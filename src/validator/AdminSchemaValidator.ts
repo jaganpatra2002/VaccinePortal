@@ -11,7 +11,12 @@ export const addSlotValidate = Joi.object({
 })
 
 export const filteredData = Joi.object({
-    age: Joi.number().min(18).optional(),
-    pincode: Joi.number().min(100000).max(999999).optional(),
-    vaccinationStatus: Joi.string().optional(),
+    // age: Joi.number().min(18).optional(),
+    // pincode: Joi.number().min(100000).max(999999).optional(),
+    // vaccinationStatus: Joi.string().optional(),
+    // score: Joi.integer
+    //     .min(0)
+    //     .max(30)().optional(),
+    score: Joi.string().optional(),
+    status: Joi.string().optional()
 })

@@ -65,7 +65,6 @@ const BookSlot = async (event) => {
         // slot not found
         const objectId = new mongodb_1.ObjectId(slotId);
         const existingSlotId = await DB.slotDb?.findOne({ _id: objectId });
-        console.log(existingSlotId);
         if (!existingSlotId) {
             return (0, responseFormat_1.ResponseFormat)(400, "Slot Id not found");
         }
@@ -100,7 +99,6 @@ const BookSlot = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, `Dose ${doseType} slot booked successfully for slot ${existingSlotId._id}`);
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };
@@ -113,17 +111,12 @@ const userSlotBooking = async (event) => {
         }
         const DB = await (0, exports.connectToDb)();
         const mobile = event.queryStringParameters?.mobile;
-        console.log(mobile);
         const obj = { mobile };
-        console.log(obj);
         const bookData = SlotSchemaValidator_1.mybooking.validate(obj);
-        console.log(bookData.error);
         if (bookData.error) {
-            console.log(bookData.error);
             return (0, responseFormat_1.ResponseFormat)(400, "Format Error", bookData.error);
         }
         const existingUser = await DB.userDb?.findOne({ mobile: mobile });
-        console.log(existingUser);
         if (!existingUser?.mobile) {
             return (0, responseFormat_1.ResponseFormat)(400, "User Not Found in DB");
         }
@@ -133,7 +126,6 @@ const userSlotBooking = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, "Data Found", existingUser);
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };
@@ -149,7 +141,6 @@ const cancelSlot = async (event) => {
         const data = { mobile };
         const slotValidate = SlotSchemaValidator_1.cancelBooking.validate(data);
         if (slotValidate.error) {
-            console.log(slotValidate.error);
             return (0, responseFormat_1.ResponseFormat)(400, "Format Error", slotValidate.error);
         }
         const existingUser = await DB.userDb?.findOne({ mobile });
@@ -161,17 +152,14 @@ const cancelSlot = async (event) => {
         }
         const slotInfo = existingUser.doseHistory[0].date;
         const slotDateTime = new Date(slotInfo);
-        console.log(`Parsed slotDateTime object: ${slotDateTime.toISOString()}`);
         if (isNaN(slotDateTime.getTime())) {
             return (0, responseFormat_1.ResponseFormat)(400, "Invalid slot date or time format in database");
         }
         const twentyFourHoursFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        console.log(twentyFourHoursFromNow);
         if (slotDateTime >= twentyFourHoursFromNow) {
             return (0, responseFormat_1.ResponseFormat)(400, "Cannot cancel slot within 24 hours of appointment time");
         }
         const slotId = await existingUser.bookedSlot;
-        console.log("$$$", slotId);
         const Info = await DB.slotDb?.findOne({ _id: slotId });
         if (Info?.bookedCount > 10) {
             return (0, responseFormat_1.ResponseFormat)(400, "Booked Slot Limit is 10");
@@ -196,7 +184,6 @@ const cancelSlot = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, "Data Found", existingUser);
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };

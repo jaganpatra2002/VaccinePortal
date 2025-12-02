@@ -42,7 +42,6 @@ export const UpdateVaccinationStatusCron = async (event: any) => {
         }
         return ResponseFormat(200,"Vaccine cron is working");
     } catch (error) {
-        console.log(error);
         return ResponseFormat(400, "Something Went Wrong", error);
     }
 }

@@ -4,9 +4,8 @@ import { UserModel, VaccinationStatus } from "../models/UserModel";
 import { dbConnect } from "../dbConnection/MongoClient";
 import { loginValidator, registerValidator } from '../validator/UserSchemaValidator';
 import { ResponseFormat } from "../utils/responseFormat";
-import { AdminConfirmSignUpCommand, AdminInitiateAuthCommand, AdminUserGlobalSignOutCommand, CognitoIdentityProviderClient, InitiateAuthCommand, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { AdminConfirmSignUpCommand, AdminInitiateAuthCommand, AdminUserGlobalSignOutCommand, CognitoIdentityProviderClient, RespondToAuthChallengeCommand, InitiateAuthCommand, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { tokenValidation, verifier } from "../middleware/auth";
-
 const client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 const userPoolId = "us-east-1_HRKw865aZ";
 export const registerUser = async (event: any) => {
@@ -88,7 +87,7 @@ export const loginUser = async (event: any) => {
         } catch (error) {
             console.log("ERROR", error);
         }
-
+        await sleep(500);
         const command = new InitiateAuthCommand({
             AuthFlow: "USER_PASSWORD_AUTH",
             ClientId: process.env.CLIENT_ID,
@@ -96,6 +95,7 @@ export const loginUser = async (event: any) => {
                 USERNAME: mobileNumber,
                 PASSWORD: password,
             },
+
         });
 
         const response = await client.send(command);
@@ -113,10 +113,14 @@ export const loginUser = async (event: any) => {
             if (!existingUser) {
                 return ResponseFormat(400, "User Not found with this mobile number");
             }
+            console.log("session", response.Session);
+            console.log("Challenge", response.ChallengeName);
             return ResponseFormat(200, "User Information", {
                 accessToken: accessToken,
                 idToken: idToken,
                 refreshToken: refreshToken,
+                session: response.Session,
+                challengeName: response.ChallengeName,
                 _id: existingUser?._id,
                 name: existingUser?.name,
                 mobile: existingUser?.mobile,
@@ -127,6 +131,65 @@ export const loginUser = async (event: any) => {
         return ResponseFormat(400, "Internal Server Error", error);
     }
 }
+
+// export const MFAloginUser = async (event: any) => {
+//     try {
+//         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
+//         const { mobile, session, mfa } = body;
+//         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
+//         try {
+//             const expireToken = new AdminUserGlobalSignOutCommand({
+//                 UserPoolId: userPoolId,
+//                 Username: mobileNumber
+//             });
+//             await client.send(expireToken);
+//         } catch (error) {
+//             console.log("ERROR", error);
+//         }
+//         await sleep(500);
+//         const command = new RespondToAuthChallengeCommand({
+//             ClientId: process.env.CLIENT_ID,
+//             ChallengeName: "SMS_MFA",
+//             Session: session,
+//             ChallengeResponses: {
+//                 SMS_MFA_CODE: mfa,
+//                 USERNAME: mobileNumber
+//             }
+//         });
+
+//         const response = await client.send(command);
+//         const accessToken = response.AuthenticationResult?.AccessToken;
+//         const idToken = response.AuthenticationResult?.IdToken;
+//         const refreshToken = response.AuthenticationResult?.RefreshToken;
+
+//         const db = await dbConnect();
+//         const validateCred = loginValidator.validate(body);
+//         if (validateCred.error) {
+//             return ResponseFormat(400, "Validation Format error", validateCred.error.message);
+//         }
+//         else {
+//             const existingUser = await db!.findOne({ mobile });
+//             if (!existingUser) {
+//                 return ResponseFormat(400, "User Not found with this mobile number");
+//             }
+//             console.log("session", response.Session);
+//             console.log("Challenge", response.ChallengeName);
+//             return ResponseFormat(200, "User Information", {
+//                 accessToken: accessToken,
+//                 idToken: idToken,
+//                 refreshToken: refreshToken,
+//                 session: response.Session,
+//                 challengeName: response.ChallengeName,
+//                 _id: existingUser?._id,
+//                 name: existingUser?.name,
+//                 mobile: existingUser?.mobile,
+//                 isAdmin: existingUser?.isAdmin || false,
+//             });
+//         }
+//     } catch (error) {
+//         return ResponseFormat(400, "Internal Server Error", error);
+//     }
+// }
 export const getProfile = async (event: any) => {
     try {
         const checkAuth = await tokenValidation(event);
@@ -146,4 +209,7 @@ export const getProfile = async (event: any) => {
     } catch (error) {
         return ResponseFormat(400, "Internal Server Error", error);
     }
+}
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

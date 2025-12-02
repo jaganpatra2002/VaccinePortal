@@ -62,7 +62,6 @@ const emailFormat = async (event) => {
         };
     }
     catch (err) {
-        console.error(err);
         throw err;
     }
 };

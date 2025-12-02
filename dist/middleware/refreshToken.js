@@ -19,14 +19,12 @@ const RefreshToken = async (event) => {
             },
         });
         const response = await client.send(command);
-        console.log("Response", response);
         return (0, responseFormat_1.ResponseFormat)(200, "Token refreshed", {
             accessToken: response.AuthenticationResult?.AccessToken,
             idToken: response.AuthenticationResult?.IdToken,
         });
     }
     catch (error) {
-        console.log("Error refreshing token:", error);
         return (0, responseFormat_1.ResponseFormat)(400, "Failed to refresh token", error);
     }
 };

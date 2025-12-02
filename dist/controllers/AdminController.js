@@ -20,7 +20,6 @@ const addSlot = async (event) => {
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         const { date, time, availableCapacity } = body;
         const sloValidate = AdminSchemaValidator_1.addSlotValidate.validate(body);
-        console.log(sloValidate);
         if (sloValidate.error) {
             return (0, responseFormat_1.ResponseFormat)(400, "Format error", sloValidate.error.message);
         }
@@ -44,7 +43,6 @@ const getSlots = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, "All slots found", slotData);
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something went wrong", error);
     }
 };
@@ -57,7 +55,6 @@ const getAllBookings = async (event) => {
         }
         const DB = await (0, exports.connectToDb)();
         const bookingsData = await DB.userDb?.find({ bookedSlot: { $ne: null } }).toArray();
-        console.log(bookingsData);
         return (0, responseFormat_1.ResponseFormat)(200, "All bookings found", bookingsData);
     }
     catch (error) {
@@ -68,36 +65,52 @@ exports.getAllBookings = getAllBookings;
 const getFilteredData = async (event) => {
     try {
         const checkAuth = await (0, auth_1.tokenValidation)(event);
-        console.log("checkAuth", checkAuth);
         if (checkAuth !== 1) {
             return (0, responseFormat_1.ResponseFormat)(401, "Unauthorized: Invalid");
         }
         const DB = await (0, exports.connectToDb)();
-        const age = event.queryStringParameters?.age;
-        const pincode = event.queryStringParameters?.pincode;
-        const vaccinationStatus = event.queryStringParameters?.vaccinationStatus;
-        let query = { age, pincode, vaccinationStatus };
+        const score = event.queryStringParameters?.score;
+        const status = event.queryStringParameters?.status;
+        let query = { score, status };
         const filterData = AdminSchemaValidator_1.filteredData.validate(query);
         if (filterData.error) {
             return (0, responseFormat_1.ResponseFormat)(400, "Format error", filterData.error.message);
         }
-        console.log(filterData.error);
         let finalquery = {};
-        if (filterData.value.age !== undefined) {
-            finalquery.age = filterData.value.age;
+        if (filterData.value.status === "Analyzed" || filterData.value.status === "UnAnalyzed") {
+            finalquery.status = filterData.value.status;
         }
-        if (filterData.value.pincode !== undefined) {
-            finalquery.pincode = filterData.value.pincode;
+        console.log("Query", finalquery);
+        if (filterData.value.status === "Analyzed" && filterData.value.score && filterData.value.score !== "All") {
+            const Scorerangevalues = filterData.value.score.split(',');
+            const rangeConditions = [];
+            Scorerangevalues.forEach((i) => {
+                switch (i) {
+                    case '0-30':
+                        rangeConditions.push({ score: { $gte: 0, $lte: 30 } });
+                        break;
+                    case '30-60':
+                        rangeConditions.push({ score: { $gt: 30, $lte: 60 } });
+                        break;
+                    case '60-90':
+                        rangeConditions.push({ score: { $gt: 60, $lte: 90 } });
+                        break;
+                    case 'gt90':
+                        rangeConditions.push({ score: { gt: 90 } });
+                        break;
+                }
+            });
+            if (rangeConditions.length > 0) {
+                finalquery.$or = rangeConditions;
+            }
         }
-        if (filterData.value.vaccinationStatus !== undefined) {
-            finalquery.vaccinationStatus = filterData.value.vaccinationStatus;
-        }
+        console.log("Query", finalquery);
         const data = await DB.userDb?.find(finalquery).toArray();
-        console.log(data);
+        console.log("Data", data);
         return (0, responseFormat_1.ResponseFormat)(200, "All filtered data found", data);
     }
     catch (error) {
-        console.log(error);
+        console.log("Error", error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something went wrong", error);
     }
 };

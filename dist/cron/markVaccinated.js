@@ -42,7 +42,6 @@ const UpdateVaccinationStatusCron = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, "Vaccine cron is working");
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };

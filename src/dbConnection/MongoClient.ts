@@ -12,7 +12,6 @@ export const dbConnect = async () => {
     try {
         await getClient();
         const userDB = client.db("VaccineDatabase").collection("VaccinePortal");
-        console.log("DB Connected Successfully");
         return userDB;
     } catch (error) {
         console.log("Error in DB Connection", error);
@@ -22,7 +21,6 @@ export const slotdbConnect = async () => {
     try {
         await getClient();
         const slotDB = client.db("VaccineDatabase").collection("slots");
-        console.log("DB Connected Successfully");
         return slotDB;
     } catch (error) {
         console.log("Error in DB Connection", error);

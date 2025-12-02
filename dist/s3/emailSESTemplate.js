@@ -3,7 +3,6 @@
 // import {buildHtmlEmail} from './emailTemplate';
 // const client = new SESClient({ region: process.env.AWS_REGION });
 // export const SESMail = async (event:any) => {
-//   console.log("S3 Event:", JSON.stringify(event, null, 2));
 //   const s3 = event.Records[0];
 //   const bucketName = s3.s3.bucket.name;
 //   const objectKey = s3.s3.object.key;
@@ -28,9 +27,7 @@
 //   };
 //   try {
 //     const result = await client.send(new SendEmailCommand(params));
-//     console.log("Email sent:", result.MessageId);
 //   } catch (e) {
-//     console.error("SES error:", e);
 //     throw e;
 //   }
 // };

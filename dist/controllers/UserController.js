@@ -17,9 +17,7 @@ const userPoolId = "us-east-1_HRKw865aZ";
 const registerUser = async (event) => {
     try {
         const db = await (0, MongoClient_1.dbConnect)();
-        console.log("User is registered");
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        console.log("Parsed body:", body);
         const { name, mobile, password, aadharNumber, age, pincode, } = body;
         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
         const existingUser = await db.findOne({ mobile });
@@ -53,7 +51,6 @@ const registerUser = async (event) => {
         const accessToken = response.AuthenticationResult?.AccessToken;
         const payload = await auth_1.verifier.verify(accessToken);
         const subid = payload.sub;
-        console.log("Sub ID from token payload:", subid);
         const newUser = {
             name,
             mobile,
@@ -69,15 +66,12 @@ const registerUser = async (event) => {
         };
         const validateResult = UserSchemaValidator_1.registerValidator.validate(newUser);
         if (validateResult.error) {
-            console.error('Validation error:', validateResult.error.message);
             return (0, responseFormat_1.ResponseFormat)(400, "Validation Format error", validateResult.error.message);
         }
-        console.log('Valid data:', validateResult.value);
         await db.insertOne(newUser);
         return (0, responseFormat_1.ResponseFormat)(201, "User Registered Successfully");
     }
     catch (error) {
-        console.log("Error in Register Process:", error);
         return (0, responseFormat_1.ResponseFormat)(400, "Internal Server Error", error);
     }
 };
@@ -85,7 +79,6 @@ exports.registerUser = registerUser;
 const loginUser = async (event) => {
     try {
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-        console.log("Parsed body:", body);
         const { mobile, password } = body;
         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
         try {
@@ -93,12 +86,12 @@ const loginUser = async (event) => {
                 UserPoolId: userPoolId,
                 Username: mobileNumber
             });
-            console.log("expiry", expireToken);
             await client.send(expireToken);
         }
         catch (error) {
             console.log("ERROR", error);
         }
+        await sleep(500);
         const command = new client_cognito_identity_provider_1.InitiateAuthCommand({
             AuthFlow: "USER_PASSWORD_AUTH",
             ClientId: process.env.CLIENT_ID,
@@ -112,9 +105,7 @@ const loginUser = async (event) => {
         const idToken = response.AuthenticationResult?.IdToken;
         const refreshToken = response.AuthenticationResult?.RefreshToken;
         const db = await (0, MongoClient_1.dbConnect)();
-        console.log(mobile, password);
         const validateCred = UserSchemaValidator_1.loginValidator.validate(body);
-        console.log(validateCred);
         if (validateCred.error) {
             return (0, responseFormat_1.ResponseFormat)(400, "Validation Format error", validateCred.error.message);
         }
@@ -123,10 +114,14 @@ const loginUser = async (event) => {
             if (!existingUser) {
                 return (0, responseFormat_1.ResponseFormat)(400, "User Not found with this mobile number");
             }
+            console.log("session", response.Session);
+            console.log("Challenge", response.ChallengeName);
             return (0, responseFormat_1.ResponseFormat)(200, "User Information", {
                 accessToken: accessToken,
                 idToken: idToken,
                 refreshToken: refreshToken,
+                session: response.Session,
+                challengeName: response.ChallengeName,
                 _id: existingUser?._id,
                 name: existingUser?.name,
                 mobile: existingUser?.mobile,
@@ -135,11 +130,66 @@ const loginUser = async (event) => {
         }
     }
     catch (error) {
-        console.log("Error in LoginUser", error);
         return (0, responseFormat_1.ResponseFormat)(400, "Internal Server Error", error);
     }
 };
 exports.loginUser = loginUser;
+// export const MFAloginUser = async (event: any) => {
+//     try {
+//         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
+//         const { mobile, session, mfa } = body;
+//         const mobileNumber = mobile.startsWith("+") ? mobile : `+91${mobile}`;
+//         try {
+//             const expireToken = new AdminUserGlobalSignOutCommand({
+//                 UserPoolId: userPoolId,
+//                 Username: mobileNumber
+//             });
+//             await client.send(expireToken);
+//         } catch (error) {
+//             console.log("ERROR", error);
+//         }
+//         await sleep(500);
+//         const command = new RespondToAuthChallengeCommand({
+//             ClientId: process.env.CLIENT_ID,
+//             ChallengeName: "SMS_MFA",
+//             Session: session,
+//             ChallengeResponses: {
+//                 SMS_MFA_CODE: mfa,
+//                 USERNAME: mobileNumber
+//             }
+//         });
+//         const response = await client.send(command);
+//         const accessToken = response.AuthenticationResult?.AccessToken;
+//         const idToken = response.AuthenticationResult?.IdToken;
+//         const refreshToken = response.AuthenticationResult?.RefreshToken;
+//         const db = await dbConnect();
+//         const validateCred = loginValidator.validate(body);
+//         if (validateCred.error) {
+//             return ResponseFormat(400, "Validation Format error", validateCred.error.message);
+//         }
+//         else {
+//             const existingUser = await db!.findOne({ mobile });
+//             if (!existingUser) {
+//                 return ResponseFormat(400, "User Not found with this mobile number");
+//             }
+//             console.log("session", response.Session);
+//             console.log("Challenge", response.ChallengeName);
+//             return ResponseFormat(200, "User Information", {
+//                 accessToken: accessToken,
+//                 idToken: idToken,
+//                 refreshToken: refreshToken,
+//                 session: response.Session,
+//                 challengeName: response.ChallengeName,
+//                 _id: existingUser?._id,
+//                 name: existingUser?.name,
+//                 mobile: existingUser?.mobile,
+//                 isAdmin: existingUser?.isAdmin || false,
+//             });
+//         }
+//     } catch (error) {
+//         return ResponseFormat(400, "Internal Server Error", error);
+//     }
+// }
 const getProfile = async (event) => {
     try {
         const checkAuth = await (0, auth_1.tokenValidation)(event);
@@ -151,7 +201,6 @@ const getProfile = async (event) => {
         const payLoadSubId = payload.sub;
         const db = await (0, MongoClient_1.dbConnect)();
         const dbSubId = await db.findOne({ "subId": payLoadSubId });
-        console.log("User sub from token payload:", dbSubId?.subId);
         return (0, responseFormat_1.ResponseFormat)(200, "Profile Information", {
             _id: dbSubId?._id,
             name: dbSubId?.name,
@@ -159,8 +208,10 @@ const getProfile = async (event) => {
         });
     }
     catch (error) {
-        console.log("Error in profile api", error);
         return (0, responseFormat_1.ResponseFormat)(400, "Internal Server Error", error);
     }
 };
 exports.getProfile = getProfile;
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

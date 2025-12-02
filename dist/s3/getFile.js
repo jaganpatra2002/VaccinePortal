@@ -23,7 +23,6 @@ const getFile = async (event) => {
         return (0, responseFormat_1.ResponseFormat)(200, "Fetched File Info", signedUrl);
     }
     catch (error) {
-        console.log(error);
         return (0, responseFormat_1.ResponseFormat)(400, "Something Went Wrong", error);
     }
 };

@@ -1,7 +1,8 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const s3 = new S3Client({ region: "us-east-1"});
-const DESTINATION_BUCKET = "sizereducer";
+const newS3 = new S3Client({ region: "ap-south-2"});
+const DESTINATION_BUCKET = "newregionbucket12345";
 // let value=1;
 export const handler = async (event:any) => {
   let value= new Date().getTime();
@@ -15,7 +16,7 @@ export const handler = async (event:any) => {
         Key: key,
       })
     );
-    await s3.send(
+    await newS3.send(
       new PutObjectCommand({
         Bucket: DESTINATION_BUCKET,
         Key: `File${value}${key}`,

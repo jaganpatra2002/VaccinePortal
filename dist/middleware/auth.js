@@ -10,7 +10,6 @@ exports.verifier = aws_jwt_verify_1.CognitoJwtVerifier.create({
     clientId: "gjbn4hji9mkgdc7ofag0n1el5",
 });
 const tokenValidation = async (event) => {
-    console.log("Calling Token Validation");
     const userDb = await (0, MongoClient_1.dbConnect)();
     const token = event.headers.Authorization?.split(" ")[1];
     if (!token) {
@@ -19,12 +18,9 @@ const tokenValidation = async (event) => {
     let payload;
     try {
         payload = await exports.verifier.verify(token);
-        // return payload;
     }
     catch (error) {
-        console.log("Error in token verification", error);
         if (error.logs) {
-            console.log("Error in token verification", error);
             return (0, responseFormat_1.ResponseFormat)(401, "Token Expired");
         }
     }
@@ -34,9 +30,7 @@ const tokenValidation = async (event) => {
     const payLoadSubId = payload.sub;
     const findSUbId = await userDb?.findOne({ "subId": payLoadSubId });
     const DbSubId = await findSUbId.subId;
-    console.log("DbSubId", DbSubId);
     if (payLoadSubId === DbSubId) {
-        console.log("Authentication successful", findSUbId?.name);
         return 1;
     }
 };

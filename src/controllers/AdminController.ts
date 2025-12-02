@@ -65,27 +65,49 @@ export const getFilteredData = async (event: any) => {
             return ResponseFormat(401, "Unauthorized: Invalid");
         }
         const DB = await connectToDb();
-        const age = event.queryStringParameters?.age;
-        const pincode = event.queryStringParameters?.pincode;
-        const vaccinationStatus = event.queryStringParameters?.vaccinationStatus;
-        let query: Search = { age, pincode, vaccinationStatus };
+        const score = event.queryStringParameters?.score;
+        const status = event.queryStringParameters?.status;
+        let query: Search = { score, status };
         const filterData = filteredData.validate(query);
         if (filterData.error) {
             return ResponseFormat(400, "Format error", filterData.error.message)
         }
-        let finalquery: Search = {};
-        if (filterData.value.age !== undefined) {
-            finalquery.age = filterData.value.age;
+        let finalquery: any = {
+
+        };
+        if (filterData.value.status === "Analyzed" || filterData.value.status === "UnAnalyzed") {
+            finalquery.status = filterData.value.status;          
         }
-        if (filterData.value.pincode !== undefined) {
-            finalquery.pincode = filterData.value.pincode;
+            console.log("Query", finalquery);
+        if (filterData.value.status === "Analyzed" && filterData.value.score && filterData.value.score !== "All") {
+            const Scorerangevalues = filterData.value.score.split(',');
+            const rangeConditions: any[] = [];
+            Scorerangevalues.forEach((i: string) => {
+                switch (i) {
+                    case '0-30':
+                        rangeConditions.push({score :{ $gte:0, $lte:30}});
+                        break;
+                    case '30-60':
+                        rangeConditions.push({score:{ $gt:30, $lte:60}});
+                        break;
+                    case '60-90':
+                        rangeConditions.push({score:{$gt:60, $lte:90}});
+                        break;
+                    case 'gt90':
+                        rangeConditions.push({score:{gt:90}});
+                        break;
+                }
+            })
+            if(rangeConditions.length>0){
+                finalquery.$or=rangeConditions;
+            }
         }
-        if (filterData.value.vaccinationStatus !== undefined) {
-            finalquery.vaccinationStatus = filterData.value.vaccinationStatus;
-        }
+        console.log("Query", finalquery)
         const data = await DB.userDb?.find(finalquery).toArray();
-        return ResponseFormat(200, "All filtered data found",data);
+        console.log("Data", data);
+        return ResponseFormat(200, "All filtered data found", data);
     } catch (error) {
+        console.log("Error", error);
         return ResponseFormat(400, "Something went wrong", error);
     }
 }
