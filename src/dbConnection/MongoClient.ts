@@ -1,5 +1,7 @@
 import { MongoClient } from "mongodb";
-const client = new MongoClient("mongodb+srv://jaganpatra_db_user:Patra123@cluster0.twvcjqe.mongodb.net/?appName=Cluster0");
+const url=process.env.MONGODB_URL || "";
+const client = new MongoClient(url);
+
 let cachedClient: MongoClient | null = null;
 const getClient = async () => {
     if (cachedClient) {
